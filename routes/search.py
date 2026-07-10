@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, render_template, session
 
 from db.models import cur, is_session_set
 
-search_bp = Blueprint("search", name)
+search_bp = Blueprint("search", __name__)
 
 @search_bp.get("/search")
 def search():
@@ -17,7 +17,7 @@ def search():
             """
             SELECT id,
                    title,
-                   currency  ' '  printf('%,.2f', price) AS price,
+                   currency || ' ' || printf('%,.2f', price) AS price,
                    source,
                    image_url,
                    created_at
