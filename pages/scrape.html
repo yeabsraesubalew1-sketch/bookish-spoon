@@ -95,11 +95,6 @@
       tabindex="0"
       id="result-pre"
     ></pre>
-
-    <div class="mt-3 text-xs text-gray-500">
-      Tip: click <span class="font-medium">Edit</span> to modify the JSON then
-      submit.
-    </div>
   </div>
 </template>
 
@@ -178,8 +173,16 @@
 
       const data = await resp.json();
       clearInterval(progress);
+      document.getElementById("loading-text-second").innerHTML =
+        "Scraping in progress...";
       hideLoading();
-      showResultJSON(data);
+      if ("error" in data) {
+        resultArea.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded border border-red-100">
+         <strong>Error:</strong> ${data.error}
+       </div>`;
+      } else {
+        showResultJSON(data);
+      }
     } catch (err) {
       hideLoading();
       resultArea.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded border border-red-100">
