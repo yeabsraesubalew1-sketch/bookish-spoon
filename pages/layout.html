@@ -16,6 +16,13 @@
         --earth-500: #7a6b54;
         --accent: #9aa27a;
       }
+      /* Prevent horizontal scroll and rubber-band overscroll */
+      html,
+      body {
+        overflow-x: hidden;
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+      }
       body {
         background: linear-gradient(180deg, var(--earth-50), #fff 60%);
       }
@@ -36,6 +43,38 @@
         white-space: pre-wrap;
         word-break: break-word;
       }
+      .search-loader {
+        display: flex;
+        justify-content: center;
+        padding: 12px;
+      }
+
+      .search-dot {
+        width: 8px;
+        height: 8px;
+        background: #444;
+        border-radius: 50%;
+        margin: 0 3px;
+        animation: pulse 1.2s infinite ease-in-out;
+      }
+
+      .search-dot:nth-child(2) {
+        animation-delay: 0.2s;
+      }
+      .search-dot:nth-child(3) {
+        animation-delay: 0.4s;
+      }
+
+      @keyframes pulse {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
     </style>
 
     {% block head %}{% endblock %}
@@ -46,81 +85,175 @@
     <div class="max-w-6xl mx-auto px-6 py-10">
       <!-- Header -->
       <header class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-4">
-          <div class="w-12 h-12 flex items-center justify-center">
-            <svg
-              id="site-logo-svg"
-              viewBox="0 0 48 48"
-              xmlns="http://www.w3.org/2000/svg"
-              role="img"
-              aria-label="E-commerce bag"
-              class="w-full h-full"
-            >
-              <!-- bag body -->
-              <rect
-                x="6"
-                y="12"
-                width="36"
-                height="28"
-                rx="4"
-                fill="var(--earth-500)"
-              />
-              <!-- handle -->
-              <path
-                d="M16 14 C16 8 32 8 32 14"
-                stroke="#ffffff"
-                stroke-width="2.5"
-                fill="none"
-                stroke-linecap="round"
-              />
-              <!-- centered E -->
-              <text
-                x="50%"
-                y="62%"
-                text-anchor="middle"
-                dominant-baseline="middle"
-                fill="#ffffff"
-                font-weight="700"
-                font-size="18"
+        <div class="flex items-center justify-between gap-6">
+          <!-- LEFT: LOGO (unchanged) -->
+          <a href="/" class="flex items-center gap-4 text-inherit no-underline">
+            <div class="w-12 h-12 flex items-center justify-center">
+              <svg
+                id="site-logo-svg"
+                viewBox="0 0 48 48"
+                xmlns="http://www.w3.org/2000/svg"
+                role="img"
+                aria-label="E-commerce bag"
+                class="w-full h-full"
               >
-                E
-              </text>
-            </svg>
-          </div>
-          <script>
-            (function () {
-              const svg = document.getElementById("site-logo-svg");
-              if (!svg) return;
-              const serializer = new XMLSerializer();
-              let svgStr = serializer.serializeToString(svg);
-              if (!svgStr.includes("xmlns")) {
-                svgStr = svgStr.replace(
-                  "<svg",
-                  '<svg xmlns="http://www.w3.org/2000/svg"',
-                );
-              }
-              const dataUrl =
-                "data:image/svg+xml;charset=utf-8," +
-                encodeURIComponent(svgStr);
-              let link = document.querySelector('link[rel~="icon"]');
-              if (!link) {
-                link = document.createElement("link");
-                link.rel = "icon";
-                document.head.appendChild(link);
-              }
-              link.href = dataUrl;
-            })();
-          </script>
-          <div>
-            <h1 class="text-2xl font-semibold">E-commerce</h1>
-          </div>
+                <!-- bag body -->
+                <rect
+                  x="6"
+                  y="12"
+                  width="36"
+                  height="28"
+                  rx="4"
+                  fill="var(--earth-500)"
+                />
+                <!-- handle -->
+                <path
+                  d="M16 14 C16 8 32 8 32 14"
+                  stroke="#ffffff"
+                  stroke-width="2.5"
+                  fill="none"
+                  stroke-linecap="round"
+                />
+                <!-- centered E -->
+                <text
+                  x="50%"
+                  y="62%"
+                  text-anchor="middle"
+                  dominant-baseline="middle"
+                  fill="#ffffff"
+                  font-weight="700"
+                  font-size="18"
+                >
+                  E
+                </text>
+              </svg>
+            </div>
+            <script>
+              (function () {
+                const svg = document.getElementById("site-logo-svg");
+                if (!svg) return;
+                const serializer = new XMLSerializer();
+                let svgStr = serializer.serializeToString(svg);
+                if (!svgStr.includes("xmlns")) {
+                  svgStr = svgStr.replace(
+                    "<svg",
+                    '<svg xmlns="http://www.w3.org/2000/svg"',
+                  );
+                }
+                const dataUrl =
+                  "data:image/svg+xml;charset=utf-8," +
+                  encodeURIComponent(svgStr);
+                let link = document.querySelector('link[rel~="icon"]');
+                if (!link) {
+                  link = document.createElement("link");
+                  link.rel = "icon";
+                  document.head.appendChild(link);
+                }
+                link.href = dataUrl;
+              })();
+            </script>
+            <div>
+              <h1 class="text-2xl font-semibold">E-commerce</h1>
+            </div>
+          </a>
+
+          <!-- RIGHT SIDE -->
         </div>
 
-        <nav class="text-sm text-gray-600 space-x-4">
-          <a href="/" class="hover:underline">Home</a>
-          <a href="/scrape" class="hover:underline">Scrape</a>
-          <a href="/my-products" class="hover:underline">My Products</a>
-        </nav>
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <button
+              id="search-toggle"
+              class="p-2 rounded-md hover:bg-gray-100 transition"
+            >
+              <span class="sr-only">Open search</span>
+              <svg
+                class="w-5 h-5"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z"
+                />
+              </svg>
+            </button>
+
+            <!-- SEARCH BOX: pops under the icon -->
+            <div
+              id="search-box"
+              class="hidden absolute right-0 top-full mt-2 w-80 bg-white border rounded-lg shadow-lg z-50"
+            >
+              <div class="p-3 flex gap-2">
+                <input
+                  id="search-input"
+                  type="text"
+                  placeholder="Search products..."
+                  class="flex-1 border rounded-md px-3 py-2 text-sm focus:outline-none"
+                />
+
+                <button
+                  id="search-btn"
+                  class="px-3 py-2 bg-stone-800 text-white rounded-md text-sm"
+                >
+                  Search
+                </button>
+              </div>
+
+              <!-- RESULTS -->
+              <div
+                id="search-results"
+                class="border-t text-sm max-h-72 overflow-auto"
+              ></div>
+            </div>
+          </div>
+
+          <!-- DESKTOP NAV (to the right) -->
+          <nav class="hidden md:flex text-sm text-gray-600 space-x-4">
+            <a href="/" class="hover:underline">Home</a>
+            <a href="/my-cart" class="hover:underline">My Cart</a>
+
+            {% if user %} {% if user.role == "admin" %}
+            <a href="/scrape" class="hover:underline">Scrape</a>
+            {% endif %}
+            <a href="/logout" class="hover:underline">Logout</a>
+            {% else %}
+            <a href="/login" class="hover:underline">Login</a>
+            {% endif %}
+          </nav>
+
+          <!-- HAMBURGER (MOBILE) -->
+          <button
+            id="menu-toggle"
+            class="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
+          >
+            ☰
+          </button>
+        </div>
+
+        <!-- MOBILE MENU -->
+        <div
+          id="mobile-menu"
+          class="hidden md:hidden mt-4 bg-white border rounded-lg shadow-sm"
+        >
+          <div class="flex flex-col p-4 gap-3 text-sm text-gray-700">
+            <a href="/">Home</a>
+            <a href="/my-cart">My Cart</a>
+
+            {% if user %} {% if user.role == "admin" %}
+            <a href="/scrape">Scrape</a>
+            {% endif %}
+            <a href="/logout">Logout</a>
+            {% else %}
+            <a href="/login">Login</a>
+            {% endif %}
+          </div>
+        </div>
       </header>
 
       <main class="bg-white rounded-lg shadow p-6">
@@ -144,6 +277,101 @@
         {% block loading_message %}{% endblock %}
       </div>
     </div>
+    <script>
+      let searchTimeout = null;
+      const searchToggle = document.getElementById("search-toggle");
+      const searchBox = document.getElementById("search-box");
+      const searchInput = document.getElementById("search-input");
+      const searchResults = document.getElementById("search-results");
+      const searchBtn = document.getElementById("search-btn");
+
+      const menuToggle = document.getElementById("menu-toggle");
+      const mobileMenu = document.getElementById("mobile-menu");
+
+      // TOGGLES
+      searchToggle.onclick = () => {
+        searchBox.classList.toggle("hidden");
+        searchToggle.classList.toggle("hidden");
+        searchInput.focus();
+      };
+
+      menuToggle.onclick = () => {
+        mobileMenu.classList.toggle("hidden");
+      };
+
+      // CLICK OUTSIDE
+      document.addEventListener("click", (e) => {
+        if (!searchBox.contains(e.target) && !searchToggle.contains(e.target)) {
+          searchBox.classList.add("hidden");
+          searchToggle.classList.remove("hidden");
+        }
+
+        if (!mobileMenu.contains(e.target) && !menuToggle.contains(e.target)) {
+          mobileMenu.classList.add("hidden");
+        }
+      });
+
+      // DEBOUNCED SEARCH
+      searchInput.addEventListener("input", () => {
+        clearTimeout(searchTimeout);
+        searchResults.innerHTML = `
+    <div class="search-loader">
+      <span class="search-dot"></span>
+      <span class="search-dot"></span>
+      <span class="search-dot"></span>
+    </div>
+  `;
+
+        searchTimeout = setTimeout(async () => {
+          const q = searchInput.value.trim();
+          if (!q) {
+            searchResults.innerHTML = "";
+            return;
+          }
+
+          try {
+            const res = await fetch(
+              `/get-search-results?q=${encodeURIComponent(q)}`,
+            );
+            const data = await res.json();
+
+            if (data.error) {
+              searchResults.innerHTML = `<div class="p-3 text-red-600">${data.error}</div>`;
+              return;
+            }
+
+            if (data.length === 0) {
+              searchResults.innerHTML = `<div class="p-3 text-gray-500">Nothing found</div>`;
+              return;
+            }
+
+            searchResults.innerHTML = data
+              .slice(0, 5)
+              .map(
+                (p) => `
+        <a href="/product/${p.id}"
+           class="block px-3 py-2 hover:bg-gray-100">
+          ${p.title}
+        </a>
+      `,
+              )
+              .join("");
+          } catch {
+            searchResults.innerHTML = `<div class="p-3 text-red-600">Search failed</div>`;
+          }
+        }, 1500);
+      });
+
+      // ENTER / BUTTON
+      searchBtn.onclick = () => {
+        const q = searchInput.value.trim();
+        if (q) window.location.href = `/search?q=${encodeURIComponent(q)}`;
+      };
+
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") searchBtn.click();
+      });
+    </script>
 
     {% block scripts %}{% endblock %}
   </body>

@@ -1,0 +1,92 @@
+{% extends "auth_layout.html" %} {% block title %}Login - E-commerce{% endblock
+%} {% block content %}
+<div class="bg-white rounded-xl shadow-lg p-8 space-y-6">
+  <!-- Logo / Brand -->
+  <div class="text-center space-y-2">
+    <div class="mx-auto w-14 h-14 flex items-center justify-center">
+      <svg
+        id="site-logo-svg"
+        viewBox="0 0 48 48"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="E-commerce bag"
+        class="w-full h-full"
+      >
+        <!-- bag body -->
+        <rect
+          x="6"
+          y="12"
+          width="36"
+          height="28"
+          rx="4"
+          fill="var(--earth-500)"
+        />
+        <!-- handle -->
+        <path
+          d="M16 14 C16 8 32 8 32 14"
+          stroke="#ffffff"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+        />
+        <!-- centered E -->
+        <text
+          x="50%"
+          y="62%"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          fill="#ffffff"
+          font-weight="700"
+          font-size="18"
+        >
+          E
+        </text>
+      </svg>
+    </div>
+    <h1 class="text-2xl font-semibold">Welcome back</h1>
+    <p class="text-sm text-gray-500">
+      Sign in or sign up to continue to the E-commerce project
+    </p>
+  </div>
+  {% if no_client %}
+  <div class="p-4 bg-red-50 text-red-700 rounded border border-red-100">
+    <strong>Error:</strong> Sign In Currently Unavailable
+  </div>
+  {% else %}
+  <!-- Google login button -->
+  <a
+    href="/auth/google"
+    class="group w-full flex items-center justify-center gap-3 border border-gray-200 rounded-lg px-4 py-3 hover:bg-gray-50 transition shadow-sm"
+  >
+    <!-- Google logo (SVG, no external deps) -->
+    <svg class="w-5 h-5" viewBox="0 0 48 48">
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20H24v8h11.3C33.6 32.6 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8.1 3.1l5.7-5.7C34.6 6.2 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l6.6 4.8C14.5 16.2 18.9 12 24 12c3.1 0 5.9 1.2 8.1 3.1l5.7-5.7C34.6 6.2 29.6 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.1 0 9.9-2 13.4-5.3l-6.2-5.2C29.3 34.8 26.7 36 24 36c-5.2 0-9.6-3.3-11.2-8l-6.5 5C9.7 39.7 16.4 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20H24v8h11.3c-1.1 3-3.3 5.5-6.1 7.1l.1.1 6.2 5.2C34.8 41 44 36 44 24c0-1.3-.1-2.7-.4-3.5z"
+      />
+    </svg>
+
+    <span class="text-sm font-medium text-gray-700"> Sign in with Google </span>
+  </a>
+  {% endif %}
+
+  <!-- Divider -->
+  <div class="flex items-center gap-3 text-xs text-gray-400">
+    <div class="flex-1 h-px bg-gray-200"></div>
+    <span>No passwords</span>
+    <div class="flex-1 h-px bg-gray-200"></div>
+  </div>
+</div>
+{% endblock %}

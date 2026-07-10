@@ -1,0 +1,250 @@
+{% extends "layout.html" %} {% block title %}{{ product.title }} - E-commerce{%
+endblock %} {% block content %}
+<section class="space-y-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- LEFT SIDE -->
+    <div class="space-y-4">
+      <!-- Product image -->
+      <div class="aspect-[4/3] bg-gray-100 rounded-lg overflow-hidden border">
+        <img
+          src="{{ product.image_url }}"
+          alt="{{ product.title }}"
+          class="w-full h-full object-cover"
+          onerror="this.src = '/static/placeholder.png'"
+        />
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex gap-3">
+        <!-- Take to product -->
+        <a
+          href="{{ product.product_url }}"
+          target="_blank"
+          rel="noopener"
+          class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md border border-gray-200 hover:bg-gray-50 text-sm font-medium"
+        >
+          Take to product
+          <span aria-hidden="true">↗</span>
+        </a>
+
+        <!-- Add to cart -->
+        <button
+          id="add-to-cart-btn"
+          class="flex-1 inline-flex items-center justify-center px-4 py-2 rounded-md bg-[var(--earth-500)] text-white hover:brightness-95 text-sm font-medium"
+        >
+          Add to cart
+        </button>
+        {% if user and user.role == "admin" %}
+        <button
+          data-id="{{product.id}}"
+          class="flex-1 inline-flex items-center justify-center remove-btn text-sm px-4 py-2 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition"
+        >
+          <span class="font-medium">Remove</span>
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="space-y-4">
+      <h1 class="text-2xl font-semibold leading-tight">{{ product.title }}</h1>
+
+      <p class="text-gray-600 text-sm leading-relaxed">
+        {{ product.description }}
+      </p>
+
+      <div class="text-2xl font-bold text-[var(--earth-500)]">
+        {{ product.price }}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Toast container -->
+<div id="toast-container" class="fixed bottom-6 right-6 space-y-2 z-50"></div>
+
+<!-- Login required modal -->
+<div
+  id="login-modal"
+  class="fixed inset-0 bg-black/40 hidden items-center justify-center z-40"
+>
+  <div
+    class="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4"
+    id="login-modal-box"
+  >
+    <h3 class="text-lg font-semibold mb-2">Sign in required</h3>
+    <p class="text-sm text-gray-600 mb-4">
+      You need to sign in to add items to your cart.
+    </p>
+
+    <div class="flex gap-3">
+      <a
+        href="/login"
+        target="_blank"
+        class="flex-1 text-center px-4 py-2 rounded-md bg-[var(--earth-500)] text-white text-sm"
+      >
+        Go to login
+      </a>
+      <button
+        id="close-login-modal"
+        class="flex-1 px-4 py-2 rounded-md border text-sm"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+{% if user and user.role == "admin" %} {# ================= CONFIRM POPUP
+================= #}
+<div
+  id="confirm-overlay"
+  class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50"
+>
+  <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
+    <h3 class="text-lg font-semibold text-stone-800 mb-4">Remove item?</h3>
+    <p class="text-stone-500 mb-6">This item will be removed from database</p>
+
+    <div class="flex justify-end gap-3">
+      <button
+        id="cancel-remove"
+        class="px-4 py-2 rounded-md bg-stone-100 hover:bg-stone-200"
+      >
+        Cancel
+      </button>
+      <button
+        id="confirm-remove"
+        class="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+      >
+        Remove
+      </button>
+    </div>
+  </div>
+</div>
+{# ================= TOAST ================= #}
+<div
+  id="toast"
+  class="fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white hidden z-50"
+></div>
+<script>
+  const overlay = document.getElementById("confirm-overlay");
+  const toast = document.getElementById("toast");
+  function showToast(msg, ok = true) {
+    toast.textContent = msg;
+    toast.className =
+      "fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white z-50 " +
+      (ok ? "bg-green-600" : "bg-red-600");
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("remove-btn")) {
+      e.preventDefault();
+      targetId = e.target.dataset.id;
+      overlay.classList.remove("hidden");
+      overlay.classList.add("flex");
+    }
+  });
+  document.getElementById("cancel-remove").onclick = () => {
+    overlay.classList.add("hidden");
+  };
+  overlay.onclick = (e) => {
+    if (e.target === overlay) overlay.classList.add("hidden");
+  };
+  document.getElementById("confirm-remove").onclick = async () => {
+    try {
+      const res = await fetch("/product", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: targetId }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast(data.success, true);
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 3000);
+      } else {
+        showToast(data.error, false);
+      }
+    } catch {
+      showToast("Failed to remove item", false);
+    } finally {
+      overlay.classList.add("hidden");
+    }
+  };
+</script>
+{% endif %} {% endblock %} {% block scripts %}
+<script>
+  const addToCartBtn = document.getElementById('add-to-cart-btn');
+  const toastContainer = document.getElementById('toast-container');
+  const loginModal = document.getElementById('login-modal');
+  const loginModalBox = document.getElementById('login-modal-box');
+  const closeLoginModalBtn = document.getElementById('close-login-modal');
+
+  function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `
+      px-4 py-2 rounded shadow text-sm text-white
+      ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}
+    `;
+    toast.textContent = message;
+
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('opacity-0');
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+
+  function showLoginModal() {
+    loginModal.classList.remove('hidden');
+    loginModal.classList.add('flex');
+  }
+
+  function hideLoginModal() {
+    loginModal.classList.add('hidden');
+    loginModal.classList.remove('flex');
+  }
+
+  addToCartBtn.addEventListener('click', async () => {
+    try {
+      const resp = await fetch('/my-cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: {{ product.id }} })
+      });
+
+      const data = await resp.json();
+
+      if (data.logged_in === false) {
+        showLoginModal();
+        return;
+      }
+
+      if (data.error) {
+        showToast(data.error, 'error');
+        return;
+      }
+
+      if (data.success) {
+        showToast(data.success, 'success');
+      }
+
+    } catch (err) {
+      console.error(err);
+      showToast('Something went wrong', 'error');
+    }
+  });
+
+  // Close modal actions
+  closeLoginModalBtn.addEventListener('click', hideLoginModal);
+
+  loginModal.addEventListener('click', (e) => {
+    if (!loginModalBox.contains(e.target)) {
+      hideLoginModal();
+    }
+  });
+</script>
+{% endblock %}

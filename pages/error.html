@@ -1,0 +1,12 @@
+{% extends "layout.html" %} {% block title %} {% if title %} {{title}} {% else
+%} Error {% endif %} - E-commerce{% endblock %} {% block content %}
+<section id="scrape-section" class="space-y-4 text-center">
+  <div class="p-4 bg-red-50 text-red-700 rounded border border-red-100">
+    {% if error %}
+    <h2 class="text-xl font-medium">{{error.error_code}}</h2>
+    <h3 class="text-lg font-medium">{{error.error}}</h3>
+    <h4 class="text-sm font-medium">{{error.error_message}}</h4>
+    {% else %} Something Went Wrong {% endif %}
+  </div>
+</section>
+{% endblock %}

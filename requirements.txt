@@ -1,2 +1,5 @@
 flask
 bs4
+requests
+flask-socketio
+eventlet

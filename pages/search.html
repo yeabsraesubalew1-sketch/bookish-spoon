@@ -1,0 +1,95 @@
+{% extends "layout.html" %} {% block title %}Home - E-commerce{% endblock %} {%
+block content %}
+<section class="space-y-6">
+  <!-- Page header -->
+  <div>
+    <h2 class="text-2xl font-semibold">
+      Search results for '{% if q %} {{ q }} {% endif %}'
+    </h2>
+  </div>
+
+  <!-- Products grid -->
+  <div
+    id="products-grid"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+  >
+    {% if products and products|length > 0 %} {% for product in products %}
+    <a href="/product/{{ product.id }}" class="block">
+      <article
+        class="product-card bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden"
+      >
+        <div class="aspect-[4/3] bg-gray-100 overflow-hidden">
+          <img
+            src="{{ product.image_url }}"
+            alt="{{ product.title }}"
+            loading="lazy"
+            class="w-full h-full object-cover"
+            onerror="this.src = '/static/placeholder.png'"
+          />
+        </div>
+
+        <div class="p-4 space-y-2">
+          <h3 class="product-title font-medium text-sm line-clamp-2">
+            {{ product.title }}
+          </h3>
+
+          <div class="flex items-center justify-between text-sm">
+            <span class="text-gray-500 capitalize"> {{ product.source }} </span>
+            <span class="font-semibold text-[var(--earth-500)]">
+              {{ product.price }}
+            </span>
+          </div>
+        </div>
+      </article>
+    </a>
+    {% endfor %} {% endif %}
+  </div>
+
+  <!-- Empty state -->
+  {% if not products or products|length == 0 %}
+  <div id="empty-state" class="text-center py-20 text-gray-500">
+    <p class="text-lg">No products found</p>
+  </div>
+  {% endif %}
+
+  <!-- Loader / messages -->
+  <div
+    id="infinite-status"
+    class="flex flex-col items-center py-8 gap-2 hidden"
+  >
+    <p id="status-text" class="text-sm text-gray-500"></p>
+  </div>
+</section>
+{% endblock %} {% block scripts %}
+<style>
+  /* Product card hover affordance */
+  .product-card {
+    transition:
+      transform 0.34s ease,
+      box-shadow 0.18s ease;
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Title hover affordance */
+  .product-title {
+    transition:
+      transform 0.16s ease,
+      text-decoration-color 0.16s ease;
+    text-decoration: none;
+    text-decoration-color: transparent;
+  }
+
+  .product-title:hover {
+    transform: scale(1.02);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    text-decoration-color: currentColor;
+  }
+</style>
+
+{% endblock %}

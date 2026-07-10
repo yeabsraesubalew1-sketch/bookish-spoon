@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{% block title %}E-commerce{% endblock %}</title>
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      :root {
+        --earth-50: #f7f7f3;
+        --earth-100: #efece4;
+        --earth-200: #e2d9c9;
+        --earth-500: #7a6b54;
+        --accent: #9aa27a;
+      }
+      /* Prevent horizontal scroll and rubber-band overscroll */
+      html,
+      body {
+        overflow-x: hidden;
+        overscroll-behavior-y: none;
+        overscroll-behavior-x: none;
+      }
+      body {
+        background: linear-gradient(180deg, var(--earth-50), #ffffff 65%);
+      }
+    </style>
+
+    {% block head %}{% endblock %}
+  </head>
+
+  <body
+    class="min-h-screen flex items-center justify-center text-gray-800 antialiased"
+  >
+    <div class="w-12 h-12 flex items-center justify-center hidden">
+      <svg
+        id="site-logo-svg"
+        viewBox="0 0 48 48"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="E-commerce bag"
+        class="w-full h-full"
+      >
+        <!-- bag body -->
+        <rect
+          x="6"
+          y="12"
+          width="36"
+          height="28"
+          rx="4"
+          fill="var(--earth-500)"
+        />
+        <!-- handle -->
+        <path
+          d="M16 14 C16 8 32 8 32 14"
+          stroke="#ffffff"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+        />
+        <!-- centered E -->
+        <text
+          x="50%"
+          y="62%"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          fill="#ffffff"
+          font-weight="700"
+          font-size="18"
+        >
+          E
+        </text>
+      </svg>
+    </div>
+    <script>
+      (function () {
+        const svg = document.getElementById("site-logo-svg");
+        if (!svg) return;
+        const serializer = new XMLSerializer();
+        let svgStr = serializer.serializeToString(svg);
+        if (!svgStr.includes("xmlns")) {
+          svgStr = svgStr.replace(
+            "<svg",
+            '<svg xmlns="http://www.w3.org/2000/svg"',
+          );
+        }
+        const dataUrl =
+          "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgStr);
+        let link = document.querySelector('link[rel~="icon"]');
+        if (!link) {
+          link = document.createElement("link");
+          link.rel = "icon";
+          document.head.appendChild(link);
+        }
+        link.href = dataUrl;
+      })();
+    </script>
+    <main class="w-full max-w-md px-6">{% block content %}{% endblock %}</main>
+  </body>
+</html>

@@ -3,8 +3,7 @@
 <section id="scrape-section" class="space-y-4">
   <h2 class="text-xl font-medium">Scrape product data</h2>
   <p class="text-sm text-gray-500">
-    Enter a product listing URL (e.g. jiji) and a category. This sends a request
-    to <code>/scrape</code> and displays results inline.
+    Enter a product listing URL (e.g. jiji) and a category.
   </p>
 
   <!-- Form -->
@@ -55,10 +54,6 @@
       >
         Clear
       </button>
-
-      <div class="ml-auto text-sm text-gray-500 self-center">
-        No DB yet - just testing UI
-      </div>
     </div>
   </form>
 
@@ -125,16 +120,32 @@
   Scraping in progress...
 </div>
 {% endblock %} {% block scripts %}
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
-  // (JS copied exactly from before — nothing changed)
+  const socket = io(window.location.origin);
+
+  socket.on("connect", () => {
+    console.log("Connected to server");
+    socket.emit("client_message", { msg: "Hello from browser" });
+  });
 
   const form = document.getElementById("scrape-form");
   const overlay = document.getElementById("loading-overlay");
   const loadingText = document.getElementById("loading-text");
+  const loadingLongertext = document.getElementById("loading-text-second");
   const resultArea = document.getElementById("result-area");
   const codeTemplate = document.getElementById("code-template").content;
   const editTemplate = document.getElementById("edit-template").content;
   const clearBtn = document.getElementById("clear-btn");
+
+  socket.on("progress", (data) => {
+    if (data.message) {
+      loadingText.textContent = data.message;
+    }
+    if (data.progress) {
+      loadingLongertext.textContent = data.progress;
+    }
+  });
 
   function showLoading(text = "loading...") {
     loadingText.textContent = text;
@@ -142,6 +153,7 @@
     overlay.classList.add("flex");
   }
   function hideLoading() {
+    loadingText.textContent = "loading...";
     overlay.classList.add("hidden");
     overlay.classList.remove("flex");
   }
@@ -153,14 +165,6 @@
 
     if (!url || !category) return alert("Both url and category required.");
     showLoading("loading...");
-    const progress = setInterval(async () => {
-      progress_message = await fetch("/scrape-status");
-      pmj = await progress_message.json();
-      document.getElementById("loading-text").innerHTML = pmj.message;
-      if (pmj.progress) {
-        document.getElementById("loading-text-second").innerHTML = pmj.progress;
-      }
-    }, 3000);
     try {
       const resp = await fetch("/scrape", {
         method: "POST",
@@ -172,9 +176,8 @@
         throw new Error((await resp.text()) || `HTTP ${resp.status}`);
 
       const data = await resp.json();
-      clearInterval(progress);
-      document.getElementById("loading-text-second").innerHTML =
-        "Scraping in progress...";
+      // clearInterval(progress);
+      loadingLongertext.innerHTML = "Scraping in progress...";
       hideLoading();
       if ("error" in data) {
         resultArea.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded border border-red-100">
@@ -248,35 +251,56 @@
         try {
           parsed = JSON.parse(textarea.value);
         } catch {
-          errDiv.textContent = "Invalid JSON — fix syntax before submitting.";
+          errDiv.textContent = "Invalid JSON - fix syntax before submitting.";
           errDiv.classList.remove("hidden");
           return;
         }
 
         showLoading("submitting edited JSON...");
+        // let progress;
         try {
           const resp = await fetch("/submit-json", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(parsed),
           });
-
+          // progress = setInterval(async () => {
+          //   progress_message = await fetch("/scrape-status");
+          //   pmj = await progress_message.json();
+          //   document.getElementById("loading-text").innerHTML = pmj.message;
+          //   if (pmj.progress) {
+          //     document.getElementById("loading-text-second").innerHTML =
+          //       pmj.progress;
+          //   }
+          // }, 3000);
           if (!resp.ok)
             throw new Error((await resp.text()) || `HTTP ${resp.status}`);
-
+          const data = await resp.json();
           hideLoading();
-          pre.textContent = JSON.stringify(parsed, null, 2);
-          resultArea.innerHTML = "";
-          resultArea.appendChild(node);
+          if ("error" in data) {
+            // if (typeof progress !== "undefined") clearInterval(progress);
+            throw new Error(data.error);
+          }
 
-          const toast = document.createElement("div");
-          toast.className =
-            "fixed right-6 bottom-6 bg-green-600 text-white px-4 py-2 rounded shadow";
-          toast.textContent = "Submitted successfully";
-          document.body.appendChild(toast);
-          setTimeout(() => toast.remove(), 2000);
+          if ("success" in data) {
+            // if (typeof progress !== "undefined") clearInterval(progress);
+            pre.textContent = JSON.stringify(parsed, null, 2);
+            resultArea.innerHTML = "";
+            resultArea.appendChild(node);
+            const toast = document.createElement("div");
+            toast.className =
+              "fixed right-6 bottom-6 bg-green-600 text-white px-4 py-2 rounded shadow";
+            toast.textContent = "Submitted successfully";
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+          } else {
+            // if (typeof progress !== "undefined") clearInterval(progress);
+            textarea.value = JSON.stringify(data, null, 2);
+            throw new Error("These products could not be added");
+          }
         } catch (e) {
           hideLoading();
+          // if (typeof progress !== "undefined") clearInterval(progress);
           errDiv.textContent = "Failed to submit edited JSON: " + e.message;
           errDiv.classList.remove("hidden");
         }
@@ -290,7 +314,7 @@
   }
 
   document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
+    if (e.shiftKey && e.key.toLowerCase() === "e") {
       const btn = document.querySelector(".edit-btn");
       if (btn) btn.click();
     }

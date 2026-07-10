@@ -1,0 +1,281 @@
+{% extends "layout.html" %} {% block title %}My Cart - E-commerce{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+  {# ================= NOT SIGNED IN ================= #} {% if notSignedin %}
+  <div class="text-center py-20">
+    <h2 class="text-2xl font-semibold text-stone-700 mb-4">
+      You’re not signed in
+    </h2>
+    <p class="text-stone-500 mb-6">Sign in to view and manage your cart.</p>
+    <a
+      href="/login"
+      class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-stone-800 text-white hover:bg-stone-900 transition"
+    >
+      Sign in
+    </a>
+  </div>
+
+  {% else %} {# ================= EMPTY CART ================= #} {% if incart
+  is not defined or incart|length == 0 %}
+  <div class="text-center py-20">
+    <h2 class="text-2xl font-semibold text-stone-700 mb-3">
+      Nothing in your cart yet
+    </h2>
+  </div>
+
+  {% else %} {# ================= CART GRID ================= #}
+  <div
+    id="cart-grid"
+    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+  >
+    {% for product in incart %}
+    <a
+      href="/product/{{ product.id }}"
+      class="product-card bg-white rounded-xl shadow-sm overflow-hidden"
+    >
+      <img
+        src="{{ product.image_url }}"
+        alt="{{ product.title }}"
+        class="w-full h-48 object-cover"
+      />
+
+      <div class="p-4 flex flex-col gap-2">
+        <h3 class="product-title font-medium text-stone-800 line-clamp-2">
+          {{ product.title }}
+        </h3>
+
+        <span class="text-sm text-stone-500"> {{ product.source }} </span>
+
+        <div class="flex items-center justify-between mt-2">
+          <span class="font-semibold text-stone-800">
+            {{ product.price }}
+          </span>
+
+          <button
+            data-id="{{ product.id }}"
+            class="remove-btn text-sm px-3 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  {# ================= LOADER ================= #}
+  <div id="loader" class="flex justify-center mt-10">
+    <div class="dot-loader hidden"></div>
+  </div>
+
+  <p id="end-message" class="hidden text-center text-stone-500 mt-6">
+    You’ve seen everything
+  </p>
+
+  {% endif %} {% endif %}
+</div>
+
+{# ================= CONFIRM POPUP ================= #}
+<div
+  id="confirm-overlay"
+  class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50"
+>
+  <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-lg">
+    <h3 class="text-lg font-semibold text-stone-800 mb-4">Remove item?</h3>
+    <p class="text-stone-500 mb-6">This item will be removed from your cart.</p>
+
+    <div class="flex justify-end gap-3">
+      <button
+        id="cancel-remove"
+        class="px-4 py-2 rounded-md bg-stone-100 hover:bg-stone-200"
+      >
+        Cancel
+      </button>
+      <button
+        id="confirm-remove"
+        class="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+      >
+        Remove
+      </button>
+    </div>
+  </div>
+</div>
+
+{# ================= TOAST ================= #}
+<div
+  id="toast"
+  class="fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white hidden z-50"
+></div>
+
+<style>
+  /* Product card hover affordance */
+  .product-card {
+    transition:
+      transform 0.34s ease,
+      box-shadow 0.18s ease;
+  }
+  .product-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Title hover affordance */
+  .product-title {
+    transition:
+      transform 0.16s ease,
+      text-decoration-color 0.16s ease;
+    text-decoration: none;
+    text-decoration-color: transparent;
+  }
+  .product-title:hover {
+    transform: scale(1.02);
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 3px;
+    text-decoration-color: currentColor;
+  }
+
+  /* 3 dot loader */
+  .dot-loader {
+    width: 48px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .dot-loader::before,
+  .dot-loader::after,
+  .dot-loader span {
+    content: "";
+    width: 10px;
+    height: 10px;
+    background: #444;
+    border-radius: 50%;
+    animation: pulse 1.2s infinite ease-in-out;
+  }
+  .dot-loader::after {
+    animation-delay: 0.4s;
+  }
+  .dot-loader span {
+    animation-delay: 0.2s;
+  }
+
+  @keyframes pulse {
+    0%,
+    80%,
+    100% {
+      transform: scale(0);
+    }
+    40% {
+      transform: scale(1);
+    }
+  }
+</style>
+
+<script>
+  let offset = {{ incart|length if incart is defined else 0 }};
+  const limit = 6;
+  let fetching = false;
+  let done = false;
+  let targetId = null;
+
+  const loader = document.getElementById("loader");
+  const endMsg = document.getElementById("end-message");
+  const overlay = document.getElementById("confirm-overlay");
+  const toast = document.getElementById("toast");
+
+  function showToast(msg, ok=true) {
+    toast.textContent = msg;
+    toast.className =
+      "fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg text-white z-50 " +
+      (ok ? "bg-green-600" : "bg-red-600");
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+
+  window.addEventListener("scroll", async () => {
+    if (done || fetching) return;
+
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 200) {
+      fetching = true;
+      loader.firstElementChild?.classList.remove("hidden");
+
+      try {
+        const res = await fetch(`/fetch-from-cart?offset=${offset}&limit=${limit}`);
+        const data = await res.json();
+
+        if (data.error) {
+          showToast(data.error, false);
+          done = true;
+        } else if (data.length === 0) {
+          done = true;
+          endMsg.classList.remove("hidden");
+          loader.classList.add("hidden")
+        } else {
+          offset += data.length;
+          document.getElementById("cart-grid")
+            .insertAdjacentHTML("beforeend",
+              data.map(p => `
+                <a href="/product/${p.id}" class="product-card bg-white rounded-xl shadow-sm overflow-hidden">
+                  <img src="${p.image_url}" class="w-full h-48 object-cover">
+                  <div class="p-4">
+                    <h3 class="product-title font-medium">${p.title}</h3>
+                    <span class="text-sm text-stone-500">${p.source}</span>
+                    <div class="flex justify-between mt-2">
+                      <span class="font-semibold">${p.price}</span>
+                      <button data-id="${p.id}" class="remove-btn text-red-600 text-sm">Remove</button>
+                    </div>
+                  </div>
+                </a>
+              `).join(""));
+        }
+      } catch {
+        showToast("Something went wrong", false);
+      } finally {
+        loader.firstElementChild?.classList.add("hidden");
+        fetching = false;
+      }
+    }
+  });
+
+  document.addEventListener("click", e => {
+    if (e.target.classList.contains("remove-btn")) {
+      e.preventDefault();
+      targetId = e.target.dataset.id;
+      overlay.classList.remove("hidden");
+      overlay.classList.add("flex");
+    }
+  });
+
+  document.getElementById("cancel-remove").onclick = () => {
+    overlay.classList.add("hidden");
+  };
+
+  overlay.onclick = e => {
+    if (e.target === overlay) overlay.classList.add("hidden");
+  };
+
+  document.getElementById("confirm-remove").onclick = async () => {
+    try {
+      const res = await fetch("/my-cart", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_id: targetId })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        showToast(data.success, true);
+        setTimeout(() => {
+          document.querySelector(`[data-id="${targetId}"]`)
+            ?.closest("a")?.remove();
+        }, 3000);
+      } else {
+        showToast(data.error, false);
+      }
+    } catch {
+      showToast("Failed to remove item", false);
+    } finally {
+      overlay.classList.add("hidden");
+    }
+  };
+</script>
+{% endblock %}
