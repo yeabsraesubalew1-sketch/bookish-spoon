@@ -1,0 +1,296 @@
+{% extends "layout.html" %} {% block title %}Scrape - E-commerce{% endblock %}
+{% block content %}
+<section id="scrape-section" class="space-y-4">
+  <h2 class="text-xl font-medium">Scrape product data</h2>
+  <p class="text-sm text-gray-500">
+    Enter a product listing URL (e.g. jiji) and a category. This sends a request
+    to <code>/scrape</code> and displays results inline.
+  </p>
+
+  <!-- Form -->
+  <form
+    id="scrape-form"
+    class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
+  >
+    <div class="md:col-span-2">
+      <label class="block text-sm font-medium text-gray-700 mb-1"
+        >Listing URL</label
+      >
+      <input
+        id="url"
+        name="url"
+        type="url"
+        required
+        class="w-full px-4 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+        placeholder="https://www.jiji.com/item/12345"
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1"
+        >Category</label
+      >
+      <input
+        id="category"
+        name="category"
+        type="text"
+        required
+        class="w-full px-4 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+        placeholder="Categories"
+      />
+    </div>
+
+    <div class="md:col-span-3 flex gap-3">
+      <button
+        type="submit"
+        class="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-[var(--earth-500)] text-white hover:brightness-95 shadow"
+      >
+        Scrape
+      </button>
+
+      <button
+        id="clear-btn"
+        type="button"
+        class="px-4 py-2 rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50"
+      >
+        Clear
+      </button>
+
+      <div class="ml-auto text-sm text-gray-500 self-center">
+        No DB yet - just testing UI
+      </div>
+    </div>
+  </form>
+
+  <!-- Result area -->
+  <div id="result-area" class="mt-4"></div>
+</section>
+
+<!-- Templates (hidden) -->
+<template id="code-template">
+  <div class="p-4 bg-gray-50 rounded border border-gray-100">
+    <div class="flex items-start justify-between gap-4 mb-2">
+      <h3 class="text-sm font-medium">Scrape result (JSON)</h3>
+      <div class="flex items-center gap-2">
+        <button
+          class="edit-btn px-3 py-1 text-sm rounded bg-amber-50 border border-amber-200 text-amber-700"
+        >
+          Edit
+        </button>
+        <button
+          class="copy-btn px-3 py-1 text-sm rounded bg-green-50 border border-green-200 text-green-700"
+        >
+          Copy
+        </button>
+        <button
+          class="download-btn px-3 py-1 text-sm rounded bg-blue-50 border border-blue-200 text-blue-700"
+        >
+          Download
+        </button>
+      </div>
+    </div>
+
+    <pre
+      class="code-block text-sm bg-white p-3 rounded-md border border-gray-100 overflow-x-auto"
+      tabindex="0"
+      id="result-pre"
+    ></pre>
+
+    <div class="mt-3 text-xs text-gray-500">
+      Tip: click <span class="font-medium">Edit</span> to modify the JSON then
+      submit.
+    </div>
+  </div>
+</template>
+
+<template id="edit-template">
+  <div class="p-4 bg-white rounded border border-gray-100">
+    <label class="block text-sm font-medium mb-2">Edit JSON</label>
+    <textarea
+      id="edit-textarea"
+      rows="12"
+      class="w-full p-3 border border-gray-200 rounded-md font-mono text-sm"
+    ></textarea>
+
+    <div class="mt-3 flex gap-2">
+      <button
+        class="save-edit-btn px-4 py-2 bg-[var(--earth-500)] text-white rounded"
+      >
+        Save & Submit
+      </button>
+      <button class="cancel-edit-btn px-4 py-2 border rounded">Cancel</button>
+      <div id="edit-error" class="ml-auto text-sm text-red-600 hidden"></div>
+    </div>
+  </div>
+</template>
+
+{% endblock %} {% block loading_message %}
+<div id="loading-text" class="text-sm text-gray-700">loading...</div>
+<div id="loading-text-second" class="text-xs text-gray-400">
+  Scraping in progress...
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  // (JS copied exactly from before — nothing changed)
+
+  const form = document.getElementById("scrape-form");
+  const overlay = document.getElementById("loading-overlay");
+  const loadingText = document.getElementById("loading-text");
+  const resultArea = document.getElementById("result-area");
+  const codeTemplate = document.getElementById("code-template").content;
+  const editTemplate = document.getElementById("edit-template").content;
+  const clearBtn = document.getElementById("clear-btn");
+
+  function showLoading(text = "loading...") {
+    loadingText.textContent = text;
+    overlay.classList.remove("hidden");
+    overlay.classList.add("flex");
+  }
+  function hideLoading() {
+    overlay.classList.add("hidden");
+    overlay.classList.remove("flex");
+  }
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const url = document.getElementById("url").value.trim();
+    const category = document.getElementById("category").value.trim();
+
+    if (!url || !category) return alert("Both url and category required.");
+    showLoading("loading...");
+    const progress = setInterval(async () => {
+      progress_message = await fetch("/scrape-status");
+      pmj = await progress_message.json();
+      document.getElementById("loading-text").innerHTML = pmj.message;
+      if (pmj.progress) {
+        document.getElementById("loading-text-second").innerHTML = pmj.progress;
+      }
+    }, 3000);
+    try {
+      const resp = await fetch("/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, category }),
+      });
+
+      if (!resp.ok)
+        throw new Error((await resp.text()) || `HTTP ${resp.status}`);
+
+      const data = await resp.json();
+      clearInterval(progress);
+      hideLoading();
+      showResultJSON(data);
+    } catch (err) {
+      hideLoading();
+      resultArea.innerHTML = `<div class="p-4 bg-red-50 text-red-700 rounded border border-red-100">
+         <strong>Error:</strong> ${String(err.message).replace(/</g, "&lt;")}
+       </div>`;
+    }
+  });
+
+  clearBtn.addEventListener("click", () => {
+    form.reset();
+    resultArea.innerHTML = "";
+  });
+
+  function showResultJSON(obj) {
+    resultArea.innerHTML = "";
+    const node = codeTemplate.cloneNode(true);
+    const pre = node.querySelector("#result-pre");
+    const editBtn = node.querySelector(".edit-btn");
+    const copyBtn = node.querySelector(".copy-btn");
+    const downloadBtn = node.querySelector(".download-btn");
+
+    pre.textContent = JSON.stringify(obj, null, 2);
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(pre.textContent);
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => (copyBtn.textContent = "Copy"), 1200);
+      } catch {
+        copyBtn.textContent = "Copy failed";
+      }
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const blob = new Blob([pre.textContent], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "scrape-result.json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    });
+
+    editBtn.addEventListener("click", () => {
+      const editNode = editTemplate.cloneNode(true);
+      const textarea = editNode.getElementById("edit-textarea");
+      const saveBtn = editNode.querySelector(".save-edit-btn");
+      const cancelBtn = editNode.querySelector(".cancel-edit-btn");
+      const errDiv = editNode.getElementById("edit-error");
+
+      textarea.value = pre.textContent;
+
+      cancelBtn.addEventListener("click", () => {
+        resultArea.innerHTML = "";
+        resultArea.appendChild(node);
+      });
+
+      saveBtn.addEventListener("click", async () => {
+        errDiv.classList.add("hidden");
+        let parsed;
+        try {
+          parsed = JSON.parse(textarea.value);
+        } catch {
+          errDiv.textContent = "Invalid JSON — fix syntax before submitting.";
+          errDiv.classList.remove("hidden");
+          return;
+        }
+
+        showLoading("submitting edited JSON...");
+        try {
+          const resp = await fetch("/submit-json", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(parsed),
+          });
+
+          if (!resp.ok)
+            throw new Error((await resp.text()) || `HTTP ${resp.status}`);
+
+          hideLoading();
+          pre.textContent = JSON.stringify(parsed, null, 2);
+          resultArea.innerHTML = "";
+          resultArea.appendChild(node);
+
+          const toast = document.createElement("div");
+          toast.className =
+            "fixed right-6 bottom-6 bg-green-600 text-white px-4 py-2 rounded shadow";
+          toast.textContent = "Submitted successfully";
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+        } catch (e) {
+          hideLoading();
+          errDiv.textContent = "Failed to submit edited JSON: " + e.message;
+          errDiv.classList.remove("hidden");
+        }
+      });
+
+      resultArea.innerHTML = "";
+      resultArea.appendChild(editNode);
+    });
+
+    resultArea.appendChild(node);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "e") {
+      const btn = document.querySelector(".edit-btn");
+      if (btn) btn.click();
+    }
+  });
+</script>
+{% endblock %}
