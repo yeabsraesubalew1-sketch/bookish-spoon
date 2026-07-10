@@ -32,6 +32,17 @@ It demonstrates how Python can be used as a backend framework to handle authenti
 
 ---
 
+## Actors and Initialization
+The application uses three main actor types:
+
+- Guest: an unauthenticated visitor who can browse public pages but cannot access protected routes.
+- Member: the default role assigned to a user after a successful Google OAuth sign-in. The first time the user logs in, their account is created in the database and their session is populated with their role and profile details.
+- Admin: the first authenticated user automatically becomes an admin if no admin account exists yet. After that, regular users are created as members unless an existing admin is explicitly promoted.
+
+These actors are initialized during the Google OAuth callback flow, where the app creates or retrieves the user record and stores the current user in the Flask session.
+
+---
+
 ## Scraping & Product Aggregation
 The backend supports scraping products from approved e-commerce websites.  
 Allowed websites and their selectors are configured in the database, making the scraper **extensible without code changes**.
